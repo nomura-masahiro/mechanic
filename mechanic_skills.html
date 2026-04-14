@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>整備士スキル管理</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #f5f4f0;
+    --surface: #ffffff;
+    --border: #e0ddd6;
+    --text: #1a1a18;
+    --muted: #6b6b67;
+    --hint: #a8a8a4;
+    --accent: #1a3a5c;
+    --accent-light: #e8f0f8;
+    --green-bg: #e8f5ee;
+    --green-text: #1a5c38;
+    --amber-bg: #fdf3e0;
+    --amber-text: #7a4d00;
+    --blue-bg: #e8f0f8;
+    --blue-text: #1a3a5c;
+    --purple-bg: #eeecfd;
+    --purple-text: #3d3494;
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+  body {
+    font-family: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 0 0 4rem;
+  }
+  header {
+    background: var(--accent);
+    color: #fff;
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  header svg { flex-shrink: 0; }
+  header h1 { font-size: 17px; font-weight: 600; letter-spacing: -0.3px; }
+  header p { font-size: 12px; opacity: 0.7; margin-top: 2px; }
+
+  .container { max-width: 680px; margin: 0 auto; padding: 1.25rem 1rem; }
+
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-bottom: 1.25rem;
+  }
+  @media (min-width: 480px) { .summary-grid { grid-template-columns: repeat(4, 1fr); } }
+  .stat {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 0.875rem 1rem;
+  }
+  .stat-label { font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+  .stat-val { font-size: 24px; font-weight: 700; color: var(--text); line-height: 1; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.25rem;
+    margin-bottom: 1.25rem;
+  }
+  .card h2 { font-size: 15px; font-weight: 600; margin-bottom: 1rem; color: var(--text); }
+
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+  @media (max-width: 420px) { .form-row { grid-template-columns: 1fr; } }
+  .form-group { display: flex; flex-direction: column; gap: 5px; }
+  .form-group label { font-size: 12px; color: var(--muted); font-weight: 500; }
+  .form-group input, .form-group select, .form-group textarea {
+    font-family: inherit;
+    font-size: 14px;
+    padding: 9px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg);
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.15s;
+    -webkit-appearance: none;
+  }
+  .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+    border-color: var(--accent);
+    background: #fff;
+  }
+  .form-group textarea { resize: vertical; min-height: 70px; }
+
+  .level-label { font-size: 12px; color: var(--muted); font-weight: 500; margin-bottom: 6px; }
+  .level-btns { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+  .lbtn {
+    padding: 6px 16px;
+    font-size: 13px;
+    font-family: inherit;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .lbtn.on-beginner { background: var(--green-bg); border-color: #4caf82; color: var(--green-text); font-weight: 600; }
+  .lbtn.on-mid { background: var(--amber-bg); border-color: #e6a430; color: var(--amber-text); font-weight: 600; }
+  .lbtn.on-advanced { background: var(--blue-bg); border-color: #4a7fc1; color: var(--blue-text); font-weight: 600; }
+  .lbtn.on-expert { background: var(--purple-bg); border-color: #7b70d4; color: var(--purple-text); font-weight: 600; }
+
+  .add-btn {
+    width: 100%;
+    padding: 11px;
+    font-size: 15px;
+    font-weight: 600;
+    font-family: inherit;
+    border-radius: var(--radius-sm);
+    border: none;
+    background: var(--accent);
+    color: #fff;
+    cursor: pointer;
+    transition: opacity 0.15s;
+    margin-top: 4px;
+  }
+  .add-btn:active { opacity: 0.85; }
+
+  .filter-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 1rem; }
+  .fbtn {
+    padding: 5px 14px;
+    font-size: 12px;
+    font-family: inherit;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--muted);
+    cursor: pointer;
+  }
+  .fbtn.on { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+
+  .skill-list { display: flex; flex-direction: column; gap: 10px; }
+  .skill-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem 1.1rem;
+  }
+  .skill-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 6px; }
+  .skill-name { font-size: 15px; font-weight: 600; color: var(--text); }
+  .del-btn {
+    background: none; border: none; cursor: pointer; color: var(--hint);
+    font-size: 20px; line-height: 1; padding: 0; flex-shrink: 0;
+    transition: color 0.15s;
+  }
+  .del-btn:hover { color: #c0392b; }
+  .badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    margin-bottom: 5px;
+  }
+  .b-beginner { background: var(--green-bg); color: var(--green-text); }
+  .b-mid { background: var(--amber-bg); color: var(--amber-text); }
+  .b-advanced { background: var(--blue-bg); color: var(--blue-text); }
+  .b-expert { background: var(--purple-bg); color: var(--purple-text); }
+  .skill-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .skill-note { font-size: 12px; color: var(--muted); margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); line-height: 1.6; }
+  .empty { text-align: center; padding: 2.5rem 1rem; color: var(--hint); font-size: 14px; }
+  .section-title { font-size: 15px; font-weight: 600; margin-bottom: 1rem; color: var(--text); }
+</style>
+</head>
+<body>
+
+<header>
+  <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect width="28" height="28" rx="8" fill="rgba(255,255,255,0.15)"/>
+    <path d="M8 20l4-4 2 2 6-8" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="20" cy="9" r="3" stroke="white" stroke-width="1.5"/>
+  </svg>
+  <div>
+    <h1>整備士スキル管理</h1>
+    <p>自分のスキルを記録・管理するツール</p>
+  </div>
+</header>
+
+<div class="container">
+
+  <div class="summary-grid">
+    <div class="stat"><div class="stat-label">登録スキル</div><div class="stat-val" id="c-total">0</div></div>
+    <div class="stat"><div class="stat-label">エキスパート</div><div class="stat-val" id="c-expert">0</div></div>
+    <div class="stat"><div class="stat-label">カテゴリ数</div><div class="stat-val" id="c-cat">0</div></div>
+    <div class="stat"><div class="stat-label">平均経験年数</div><div class="stat-val" id="c-years">0年</div></div>
+  </div>
+
+  <div class="card">
+    <h2>スキルを追加</h2>
+    <div class="form-row">
+      <div class="form-group">
+        <label>スキル名 *</label>
+        <input type="text" id="f-name" placeholder="例：エンジン診断">
+      </div>
+      <div class="form-group">
+        <label>カテゴリ</label>
+        <select id="f-cat">
+          <option value="">選択してください</option>
+          <option>エンジン整備</option>
+          <option>電装・電気系統</option>
+          <option>ブレーキ・足回り</option>
+          <option>ボディ・板金</option>
+          <option>エアコン・空調</option>
+          <option>トランスミッション</option>
+          <option>タイヤ・ホイール</option>
+          <option>車検・点検</option>
+          <option>EV・ハイブリッド</option>
+          <option>その他</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="level-label">スキルレベル *</div>
+    <div class="level-btns">
+      <button class="lbtn" data-lv="beginner" onclick="pickLevel(this)">初級</button>
+      <button class="lbtn" data-lv="mid" onclick="pickLevel(this)">中級</button>
+      <button class="lbtn" data-lv="advanced" onclick="pickLevel(this)">上級</button>
+      <button class="lbtn" data-lv="expert" onclick="pickLevel(this)">エキスパート</button>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>経験年数</label>
+        <input type="number" id="f-years" placeholder="例：5" min="0" max="60">
+      </div>
+      <div class="form-group">
+        <label>資格・認定（任意）</label>
+        <input type="text" id="f-cert" placeholder="例：1級整備士">
+      </div>
+    </div>
+    <div class="form-group" style="margin-bottom:12px;">
+      <label>メモ・詳細（任意）</label>
+      <textarea id="f-note" placeholder="得意な車種、特記事項など…"></textarea>
+    </div>
+    <button class="add-btn" onclick="addSkill()">スキルを追加する</button>
+  </div>
+
+  <div class="section-title">登録済みスキル</div>
+  <div class="filter-row">
+    <button class="fbtn on" data-f="all" onclick="setFilter(this)">すべて</button>
+    <button class="fbtn" data-f="beginner" onclick="setFilter(this)">初級</button>
+    <button class="fbtn" data-f="mid" onclick="setFilter(this)">中級</button>
+    <button class="fbtn" data-f="advanced" onclick="setFilter(this)">上級</button>
+    <button class="fbtn" data-f="expert" onclick="setFilter(this)">エキスパート</button>
+  </div>
+  <div class="skill-list" id="skill-list"></div>
+</div>
+
+<script>
+  const KEY = 'mechanic_skills_v1';
+  const LV_LABEL = { beginner:'初級', mid:'中級', advanced:'上級', expert:'エキスパート' };
+  let skills = [];
+  let selLevel = '';
+  let curFilter = 'all';
+
+  function load() {
+    try { const d = localStorage.getItem(KEY); if (d) skills = JSON.parse(d); } catch(e) {}
+    render();
+  }
+  function save() {
+    try { localStorage.setItem(KEY, JSON.stringify(skills)); } catch(e) {}
+  }
+  function pickLevel(btn) {
+    document.querySelectorAll('.lbtn').forEach(b => b.className = 'lbtn');
+    selLevel = btn.dataset.lv;
+    btn.classList.add('on-' + selLevel);
+  }
+  function setFilter(btn) {
+    document.querySelectorAll('.fbtn').forEach(b => b.classList.remove('on'));
+    btn.classList.add('on');
+    curFilter = btn.dataset.f;
+    render();
+  }
+  function addSkill() {
+    const name = document.getElementById('f-name').value.trim();
+    if (!name) { alert('スキル名を入力してください'); return; }
+    if (!selLevel) { alert('スキルレベルを選択してください'); return; }
+    const yv = document.getElementById('f-years').value;
+    skills.push({
+      id: Date.now(),
+      name,
+      cat: document.getElementById('f-cat').value,
+      level: selLevel,
+      years: yv !== '' ? parseInt(yv) : null,
+      cert: document.getElementById('f-cert').value.trim(),
+      note: document.getElementById('f-note').value.trim()
+    });
+    save();
+    document.getElementById('f-name').value = '';
+    document.getElementById('f-cat').value = '';
+    document.getElementById('f-years').value = '';
+    document.getElementById('f-cert').value = '';
+    document.getElementById('f-note').value = '';
+    document.querySelectorAll('.lbtn').forEach(b => b.className = 'lbtn');
+    selLevel = '';
+    render();
+  }
+  function deleteSkill(id) {
+    if (!confirm('このスキルを削除しますか？')) return;
+    skills = skills.filter(s => s.id !== id);
+    save();
+    render();
+  }
+  function render() {
+    const list = document.getElementById('skill-list');
+    const filtered = curFilter === 'all' ? skills : skills.filter(s => s.level === curFilter);
+    if (!filtered.length) {
+      list.innerHTML = '<div class="empty">スキルがまだ登録されていません</div>';
+    } else {
+      list.innerHTML = filtered.map(s => `
+        <div class="skill-item">
+          <div class="skill-top">
+            <div class="skill-name">${esc(s.name)}</div>
+            <button class="del-btn" onclick="deleteSkill(${s.id})">×</button>
+          </div>
+          <span class="badge b-${s.level}">${LV_LABEL[s.level]}</span>
+          ${s.cat ? `<div class="skill-meta">${esc(s.cat)}</div>` : ''}
+          ${s.cert ? `<div class="skill-meta">資格：${esc(s.cert)}</div>` : ''}
+          ${s.years !== null ? `<div class="skill-meta">経験：${s.years}年</div>` : ''}
+          ${s.note ? `<div class="skill-note">${esc(s.note)}</div>` : ''}
+        </div>
+      `).join('');
+    }
+    const cats = new Set(skills.map(s => s.cat).filter(Boolean));
+    const experts = skills.filter(s => s.level === 'expert').length;
+    const yrs = skills.filter(s => s.years !== null).map(s => s.years);
+    const avg = yrs.length ? Math.round(yrs.reduce((a,b)=>a+b,0)/yrs.length) : 0;
+    document.getElementById('c-total').textContent = skills.length;
+    document.getElementById('c-expert').textContent = experts;
+    document.getElementById('c-cat').textContent = cats.size;
+    document.getElementById('c-years').textContent = avg + '年';
+  }
+  function esc(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  load();
+</script>
+</body>
+</html>
